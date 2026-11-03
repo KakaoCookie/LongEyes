@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "longdriveeyes",
+	"version": "${version}",
+	"name": "Long Drive Eyes",
+	"description": "Hold C to zoom - and watch your eyes telescope out of your head on long stalks, just like in The Long Drive. Other players see it live.",
+	"authors": [
+		"Long Drive Eyes contributors"
+	],
+	"license": "MIT",
+	"icon": "assets/longdriveeyes/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"de.longdriveeyes.LongDriveEyes"
+		],
+		"client": [
+			"de.longdriveeyes.client.LongDriveEyesClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "longdriveeyes.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

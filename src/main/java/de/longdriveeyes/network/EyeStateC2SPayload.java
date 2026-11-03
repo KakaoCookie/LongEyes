@@ -1,0 +1,25 @@
+package de.longdriveeyes.network;
+
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+
+import de.longdriveeyes.LongDriveEyes;
+
+/**
+ * Client -> server: the sender's target eye extension (0..255).
+ * Only sent when the quantised value changes (key press/release or a mouse wheel notch).
+ */
+public record EyeStateC2SPayload(int extension) implements CustomPacketPayload {
+	public static final CustomPacketPayload.Type<EyeStateC2SPayload> TYPE = new CustomPacketPayload.Type<>(LongDriveEyes.id("eye_state_c2s"));
+	public static final StreamCodec<RegistryFriendlyByteBuf, EyeStateC2SPayload> CODEC = StreamCodec.composite(
+			ByteBufCodecs.VAR_INT, EyeStateC2SPayload::extension,
+			EyeStateC2SPayload::new
+	);
+
+	@Override
+	public Type<? extends CustomPacketPayload> type() {
+		return TYPE;
+	}
+}

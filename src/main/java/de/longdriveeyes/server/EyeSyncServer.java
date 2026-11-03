@@ -68,6 +68,12 @@ public final class EyeSyncServer {
 		ServerLifecycleEvents.SERVER_STOPPED.register(server -> STATES.clear());
 	}
 
+	/** Last accepted value for a player (0 if none). Used by the automated game tests. */
+	public static int getState(UUID player) {
+		Entry entry = STATES.get(player);
+		return entry == null ? 0 : entry.value;
+	}
+
 	private static void receive(ServerPlayer player, int value) {
 		if (!EyesConfig.get().syncMultiplayer) {
 			return;

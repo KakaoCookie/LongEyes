@@ -183,3 +183,23 @@ Alternativ das Projekt in ein GitHub-Repository pushen: Der enthaltene Workflow
 ```
 Testablauf: Client 1 stellt sich vor Client 2, hält C und scrollt hoch → Client 2 sieht die Augen
 wachsen; Mausrad runter → einfahren; C loslassen → vollständig einfahren.
+
+---
+
+## Automatisierte Tests (GitHub Actions)
+
+Bei jedem Push laufen drei Jobs (`.github/workflows/build.yml`):
+
+| Job | Inhalt |
+|---|---|
+| `build` | Kompiliert Main-, Client- und Gametest-Sourcesets, baut das Jar (Artefakt `long-drive-eyes-jar`) |
+| `dedicated_server_test` | Startet einen echten dedizierten Fabric-Server mit der Mod bis „Done“ und prüft, dass keine Fehler oder Client-Klassen auftreten |
+| `client_gametest` | Echter Client + echter dedizierter Server (Fabric Client GameTest API), gesteuert über simulierte Tastatur- und Mauseingaben, 33 Checks + Screenshots |
+
+Geprüft wird unter anderem: alle Mixins greifen; C = Standardtaste; 2× beim Drücken; Mausrad
+(5 Schritte → 6,10×, Begrenzung auf 20×, herauszoomen); Hotbar bleibt beim Zoomen unverändert und
+funktioniert danach wieder; Inventar öffnen deaktiviert den Zoom; Loslassen stellt das FOV wieder her;
+Client → Server-Synchronisation (Serverzustand 59 / 154 / 255 / 0); Server → Client-Synchronisation
+auf einen anderen Avatar (ein Mannequin ersetzt den zweiten Spieler) bei 2×/5×/10×/20× inklusive
+Pixelvergleich; ungültige Netzwerkwerte werden verworfen; Disconnect setzt alles zurück.
+Die Screenshots werden auf den Branch `test-screenshots` gepusht.

@@ -7,7 +7,7 @@ hineinzoomst, desto weiter fahren sie heraus. Andere Spieler sehen das live.
 | Komponente | Version |
 |---|---|
 | Minecraft | 26.1.2 (unobfuskiert, offizielle Mojang-Namen) |
-| Fabric Loader | ≥ 0.20.1 |
+| Fabric Loader | ≥ 0.18.4 (getestet mit 0.20.1) |
 | Fabric API | 0.155.3+26.1.2 |
 | Fabric Loom | 1.19-SNAPSHOT (`net.fabricmc.fabric-loom`) |
 | Gradle | 9.8.2 (Wrapper) |

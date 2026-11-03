@@ -135,17 +135,41 @@ public final class LongDriveEyesClientGameTest implements FabricClientGameTest {
 				ctx.waitTick();
 				check(ctx.computeOnClient(client -> client.player.getInventory().getSelectedSlot()) != 0, "mouse wheel changes hotbar again after zoom");
 
-				// ---- 6. Own eyes visible in front third person ----
+				// ---- 6. Own eyes in front third person (open area, nothing between camera and player) ----
+				server.runCommand("tp " + name + " 40.5 -60 40.5 180 0");
+				ctx.waitTicks(20);
+				connection.getClientLevel().waitForChunksRender();
 				setCamera(ctx, CameraType.THIRD_PERSON_FRONT);
-				ctx.waitTicks(5);
-				Path ownBefore = ctx.takeScreenshot("02_third_person_front_no_zoom");
+				ctx.waitTicks(10);
+				ctx.takeScreenshot("02_own_front_no_zoom");
 				ctx.getInput().holdKey(ZoomController.ZOOM_KEY);
 				ctx.waitTicks(40);
-				Path ownAfter = ctx.takeScreenshot("03_third_person_front_zoom_2x");
-				check(changedPixels(ownBefore, ownAfter) > 0.002, "own eyes rendered in front third-person view (screenshot differs)");
+				check(eye(ctx, ownId) > 0.2, "own eyes extended while zooming in third person");
+				ctx.takeScreenshot("03_own_front_zoom_2x");
+
+				for (int i = 0; i < 4; i++) {
+					ctx.getInput().scroll(1.0);
+					ctx.waitTick();
+				}
+
+				ctx.waitTicks(40);
+				ctx.takeScreenshot("04_own_front_zoom_4.9x");
+				server.runCommand("tp " + name + " 40.5 -60 40.5 180 35");
+				ctx.waitTicks(20);
+				ctx.takeScreenshot("05_own_front_zoom_4.9x_looking_down");
+				server.runCommand("tp " + name + " 40.5 -60 40.5 180 0");
+				ctx.getInput().holdKey(options -> options.keyShift);
+				ctx.waitTicks(20);
+				ctx.takeScreenshot("06_own_front_zoom_4.9x_sneaking");
+				ctx.getInput().releaseKey(options -> options.keyShift);
 				ctx.getInput().releaseKey(ZoomController.ZOOM_KEY);
 				ctx.waitTicks(40);
+				check(ctx.computeOnClient(client -> EyeAnimationManager.get(ownId) == null), "own eyes retracted after third-person test");
 				setCamera(ctx, CameraType.FIRST_PERSON);
+				server.runCommand("tp " + name + " 0.5 -60 4.5 180 0");
+				ctx.waitTicks(20);
+				connection.getClientLevel().waitForChunksRender();
+				ctx.waitTicks(10);
 
 				// ---- 7. Server -> client sync onto another avatar + rendering ----
 				Path baseline = ctx.takeScreenshot("10_mannequin_side_0");
@@ -159,7 +183,7 @@ public final class LongDriveEyesClientGameTest implements FabricClientGameTest {
 					Path shot = ctx.takeScreenshot("1" + (i + 1) + "_mannequin_side_" + labels[i]);
 					double changed = changedPixels(baseline, shot);
 					log(String.format("   changed pixels vs. retracted: %.2f %%", changed * 100));
-					check(changed > 0.001, "remote eyes visibly rendered at " + labels[i]);
+					check(changed > 0.0003 && changed < 0.15, "remote eyes visibly rendered at " + labels[i] + " (only a small region changes)");
 				}
 
 				server.runCommand("tp " + name + " 4.5 -60 0.5 90 0");

@@ -22,11 +22,11 @@ hineinzoomst, desto weiter fahren sie heraus. Andere Spieler sehen das live.
 ### Client
 1. Fabric Loader für 26.1.2 installieren (https://fabricmc.net/use/).
 2. `fabric-api-0.155.3+26.1.2.jar` (oder neuer für 26.1.2) in `.minecraft/mods/` legen.
-3. `long-eyes-1.1.0.jar` in `.minecraft/mods/` legen.
+3. `long-eyes-1.1.1.jar` in `.minecraft/mods/` legen.
 
 ### Server (für Multiplayer-Sichtbarkeit)
 1. Fabric-Server 26.1.2 installieren.
-2. Fabric API und `long-eyes-1.1.0.jar` in den `mods/`-Ordner des Servers legen.
+2. Fabric API und `long-eyes-1.1.1.jar` in den `mods/`-Ordner des Servers legen.
 3. Alle Spieler, die die Augen sehen bzw. zeigen sollen, brauchen die Mod ebenfalls auf dem Client.
 
 Die Mod läuft auf einem dedizierten Server, ohne Client- oder Rendering-Klassen zu laden
@@ -52,7 +52,9 @@ Auf Servern ohne die Mod funktioniert der Zoom lokal weiter; es werden dann einf
 | **Stielaugen** (`stalk`, Standard) | Augäpfel auf langen, dünnen Teleskopstielen – wie Spongebob als Schnecke |
 | **Cartoon-Augen** (`cartoon`) | Kein Stiel: nur der Augapfel kommt heraus, das Weiße wird zu einer langen Röhre gezogen, vorne sitzt die Pupille – wie bei Patrick |
 
-Der gewählte Stil wird mit synchronisiert: Andere Spieler sehen deine Augen in dem Stil, den *du* gewählt hast.
+Der Stil ist eine **persönliche Anzeigeeinstellung**: Jeder Client zeigt die Augen *aller* Spieler in dem
+Stil, den er selbst eingestellt hat. Wer Cartoon-Augen wählt, sieht bei allen Patrick-Augen – wer Stielaugen
+wählt, sieht bei allen Stielaugen. Der Stil wird deshalb nicht übertragen.
 
 * Während des Zoomens wechselt das Mausrad **keine** Hotbar-Slots; danach ist es wieder normal.
 * In Menüs/Screens ist der Zoom deaktiviert, Scrollen in Menüs bleibt unverändert.
@@ -112,9 +114,9 @@ src/main/java/de/longeyes/          (Client + Server, keine Client-Klassen)
   LongEyes.java                     Common-Entrypoint
   EyeMath.java                           Zoom → Ausfahrung, Netzwerk-Quantisierung
   config/EyesConfig.java                 JSON-Config (Gson), Validierung
-  EyeStyle.java                          Augenstile (stalk, cartoon)
-  network/EyeStateC2SPayload.java        Client → Server: Zielausfahrung (0..255), Stil
-  network/EyeStateS2CPayload.java        Server → Client: (Entity-ID, Zielausfahrung, Stil)
+  EyeStyle.java                          Augenstile (stalk, cartoon) – nur clientseitige Anzeige
+  network/EyeStateC2SPayload.java        Client → Server: Zielausfahrung (0..255)
+  network/EyeStateS2CPayload.java        Server → Client: (Entity-ID, Zielausfahrung)
   network/EyeNetworking.java             Payload-Registrierung
   server/EyeSyncServer.java              Validierung, Rate-Limit, Weiterleitung
 
@@ -147,10 +149,10 @@ src/client/java/de/longeyes/client/ (nur Client)
 * Unsichtbare Spieler bekommen keine Augen.
 
 ### Netzwerk
-* Gesendet werden nur die **Ziel**-Ausfahrung und der Stil (2 VarInts), und nur bei Änderung
-  (C drücken, C loslassen, je Mausradschritt, Stilwechsel während des Zoomens). Eine typische Zoom-Session erzeugt ~10–15 Pakete.
+* Gesendet wird nur die **Ziel**-Ausfahrung (1 VarInt), und nur bei Änderung
+  (C drücken, C loslassen, je Mausradschritt). Der Augenstil wird nicht übertragen. Eine typische Zoom-Session erzeugt ~10–15 Pakete.
 * Jeder empfangende Client simuliert dieselbe Feder → flüssige Animation auch bei Latenz.
-* Server: Werte außerhalb 0..255 und unbekannte Stile werden verworfen; max. 40 Pakete/Sekunde/Spieler (Flood-Schutz);
+* Server: Werte außerhalb 0..255 werden verworfen; max. 40 Pakete/Sekunde/Spieler (Flood-Schutz);
   Weiterleitung höchstens 1× pro Tick und nur an Spieler, die den Sender tracken (`PlayerLookup.tracking`).
 * Neue Beobachter (Betreten der Sichtweite, Join, Respawn, Dimensionswechsel) erhalten den aktuellen
   Zustand einmalig über `EntityTrackingEvents.START_TRACKING`.
@@ -182,7 +184,7 @@ src/client/java/de/longeyes/client/ (nur Client)
 ./gradlew build
 ```
 
-Ergebnis: `build/libs/long-eyes-1.1.0.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
+Ergebnis: `build/libs/long-eyes-1.1.1.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
 `maven.fabricmc.net`, `piston-meta.mojang.com`, `piston-data.mojang.com` und `libraries.minecraft.net`.
 
 Alternativ das Projekt in ein GitHub-Repository pushen: Der enthaltene Workflow
@@ -215,7 +217,7 @@ Geprüft wird unter anderem: alle Mixins greifen; C = Standardtaste; 2× beim Dr
 funktioniert danach wieder; Inventar öffnen deaktiviert den Zoom; Loslassen stellt das FOV wieder her;
 Client → Server-Synchronisation (Serverzustand 59 / 154 / 255 / 0); Server → Client-Synchronisation
 auf einen anderen Avatar (ein Mannequin ersetzt den zweiten Spieler) bei 2×/5×/10×/20× inklusive
-Pixelvergleich; ungültige Netzwerkwerte werden verworfen; Disconnect setzt alles zurück; Stilwechsel mit K inkl. Synchronisierung und Darstellung beider Stile.
+Pixelvergleich; ungültige Netzwerkwerte werden verworfen; Disconnect setzt alles zurück; Stilwechsel mit K; die Augen anderer Spieler erscheinen im eigenen eingestellten Stil.
 Die Screenshots werden auf den Branch `test-screenshots` gepusht.
 
 ---

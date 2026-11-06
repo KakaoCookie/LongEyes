@@ -14,6 +14,7 @@ import net.minecraft.world.entity.Avatar;
 import de.longeyes.client.anim.EyeAnimation;
 import de.longeyes.client.anim.EyeAnimationManager;
 import de.longeyes.client.render.EyeRenderData;
+import de.longeyes.config.EyesConfig;
 
 /**
  * Copies the interpolated eye animation into the player's render state (extract phase of the
@@ -40,7 +41,8 @@ public abstract class AvatarRendererMixin {
 		data.extension = animation.get(partialTicks);
 		data.velocity = animation.velocity();
 		data.time = entity.tickCount + partialTicks;
-		data.style = animation.style();
+		// The viewer's own setting decides how everybody's eyes look on this client.
+		data.style = EyesConfig.get().eyeStyle;
 	}
 
 	/** In first person the eyes must never block the view (e.g. with "show body" mods). */

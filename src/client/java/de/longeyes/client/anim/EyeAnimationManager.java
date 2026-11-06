@@ -6,8 +6,6 @@ import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 
-import de.longeyes.EyeStyle;
-
 /**
  * Holds the animation state of every player whose eyes are (or were just) extended, keyed by entity id.
  * Players with retracted eyes are not stored at all, so the map is empty most of the time.
@@ -19,7 +17,7 @@ public final class EyeAnimationManager {
 	private EyeAnimationManager() {
 	}
 
-	public static void setTarget(int entityId, float target, EyeStyle style) {
+	public static void setTarget(int entityId, float target) {
 		EyeAnimation animation = ANIMATIONS.get(entityId);
 
 		if (animation == null) {
@@ -32,7 +30,6 @@ public final class EyeAnimationManager {
 		}
 
 		animation.setTarget(target);
-		animation.setStyle(style);
 	}
 
 	public static EyeAnimation get(int entityId) {

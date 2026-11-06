@@ -17,7 +17,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import de.longeyes.EyeMath;
-import de.longeyes.EyeStyle;
 import de.longeyes.config.EyesConfig;
 import de.longeyes.network.EyeStateC2SPayload;
 import de.longeyes.network.EyeStateS2CPayload;
@@ -40,13 +39,12 @@ public final class EyeSyncServer {
 
 	private static final class Entry {
 		int value;
-		int style;
 		boolean dirty;
 		int packetsInWindow;
 	}
 
 	public static void init() {
-		ServerPlayNetworking.registerGlobalReceiver(EyeStateC2SPayload.TYPE, (payload, context) -> receive(context.player(), payload.extension(), payload.style()));
+		ServerPlayNetworking.registerGlobalReceiver(EyeStateC2SPayload.TYPE, (payload, context) -> receive(context.player(), payload.extension()));
 
 		ServerTickEvents.END_SERVER_TICK.register(EyeSyncServer::tick);
 
@@ -56,7 +54,7 @@ public final class EyeSyncServer {
 				Entry entry = STATES.get(trackedPlayer.getUUID());
 
 				if (entry != null && entry.value > 0) {
-					sendTo(viewer, trackedPlayer.getId(), entry.value, entry.style);
+					sendTo(viewer, trackedPlayer.getId(), entry.value);
 				}
 			}
 		});
@@ -76,19 +74,13 @@ public final class EyeSyncServer {
 		return entry == null ? 0 : entry.value;
 	}
 
-	/** Last accepted style id for a player. Used by the automated game tests. */
-	public static int getStyle(UUID player) {
-		Entry entry = STATES.get(player);
-		return entry == null ? 0 : entry.style;
-	}
-
-	private static void receive(ServerPlayer player, int value, int style) {
+	private static void receive(ServerPlayer player, int value) {
 		if (!EyesConfig.get().syncMultiplayer) {
 			return;
 		}
 
 		// Validation: reject anything outside the protocol range instead of trusting the client.
-		if (value < 0 || value > EyeMath.NET_RESOLUTION || !EyeStyle.isValidId(style)) {
+		if (value < 0 || value > EyeMath.NET_RESOLUTION) {
 			return;
 		}
 
@@ -98,9 +90,8 @@ public final class EyeSyncServer {
 			return; // flood protection
 		}
 
-		if (entry.value != value || entry.style != style) {
+		if (entry.value != value) {
 			entry.value = value;
-			entry.style = style;
 			entry.dirty = true;
 		}
 	}
@@ -135,7 +126,7 @@ public final class EyeSyncServer {
 
 			for (ServerPlayer viewer : PlayerLookup.tracking(player)) {
 				if (viewer != player) {
-					sendTo(viewer, player.getId(), entry.value, entry.style);
+					sendTo(viewer, player.getId(), entry.value);
 				}
 			}
 
@@ -145,9 +136,9 @@ public final class EyeSyncServer {
 		}
 	}
 
-	private static void sendTo(ServerPlayer viewer, int entityId, int value, int style) {
+	private static void sendTo(ServerPlayer viewer, int entityId, int value) {
 		if (ServerPlayNetworking.canSend(viewer, EyeStateS2CPayload.TYPE)) {
-			ServerPlayNetworking.send(viewer, new EyeStateS2CPayload(entityId, value, style));
+			ServerPlayNetworking.send(viewer, new EyeStateS2CPayload(entityId, value));
 		}
 	}
 }

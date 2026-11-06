@@ -3,8 +3,8 @@ package de.longeyes;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * How the eyes come out of the head. Chosen per player and synchronised, so everybody sees the
- * style the zooming player picked.
+ * How the eyes come out of the head. A purely visual, client-side preference: each client renders
+ * every player's eyes in the style chosen in its own settings. Not synchronised.
  */
 public enum EyeStyle {
 	/** Eyeballs on long, thin telescoping stalks (SpongeBob-as-a-snail look). */

@@ -1,6 +1,5 @@
 package de.longeyes.client.anim;
 
-import de.longeyes.EyeStyle;
 import de.longeyes.config.EyesConfig;
 
 /**
@@ -22,15 +21,6 @@ public final class EyeAnimation {
 	private float prevValue;
 	private float velocity;
 	private boolean extending = true;
-	private EyeStyle style = EyeStyle.STALK;
-
-	public EyeStyle style() {
-		return style;
-	}
-
-	public void setStyle(EyeStyle style) {
-		this.style = style;
-	}
 
 	public void setTarget(float target) {
 		float clamped = Math.max(0.0f, Math.min(1.0f, target));

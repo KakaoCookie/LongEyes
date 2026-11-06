@@ -171,8 +171,7 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 				ctx.getInput().pressKey(ZoomController.STYLE_KEY);
 				ctx.waitTicks(10);
 				check(ctx.computeOnClient(client -> EyesConfig.get().eyeStyle) == EyeStyle.CARTOON, "K switches to cartoon style");
-				check(server.computeOnServer(s -> EyeSyncServer.getStyle(uuid)) == EyeStyle.CARTOON.id(), "server received cartoon style while zooming");
-				check(ctx.computeOnClient(client -> EyeAnimationManager.get(ownId).style()) == EyeStyle.CARTOON, "own animation uses cartoon style");
+				checkNear(serverState(ctx, server, uuid), expectedNet(2.0 * Math.pow(1.25, 4)), 0, "style switch sends no extra state (display-only setting)");
 				ctx.waitTicks(20);
 				ctx.takeScreenshot("07_own_front_cartoon_4.9x");
 				ctx.getInput().releaseKey(ZoomController.ZOOM_KEY);
@@ -184,7 +183,6 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 				ctx.getInput().pressKey(ZoomController.STYLE_KEY);
 				ctx.waitTicks(10);
 				check(ctx.computeOnClient(client -> EyesConfig.get().eyeStyle) == EyeStyle.STALK, "K switches back to stalk style");
-				check(server.computeOnServer(s -> EyeSyncServer.getStyle(uuid)) == EyeStyle.STALK.id(), "server received stalk style again");
 				ctx.getInput().releaseKey(ZoomController.ZOOM_KEY);
 				ctx.waitTicks(40);
 				check(ctx.computeOnClient(client -> EyeAnimationManager.get(ownId) == null), "own eyes retracted after third-person test");
@@ -211,22 +209,26 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 
 				server.runCommand("tp " + name + " 4.5 -60 0.5 90 0");
 				ctx.waitTicks(10);
-				ctx.takeScreenshot("15_mannequin_front_20x");
+				Path stalkFront = ctx.takeScreenshot("15_mannequin_front_20x");
 
-				// Cartoon style on the remote avatar (front + side).
-				sendToClient(server, mannequinId, 255, EyeStyle.CARTOON.id());
-				ctx.waitTicks(20);
-				check(ctx.computeOnClient(client -> EyeAnimationManager.get(mannequinId).style()) == EyeStyle.CARTOON, "remote avatar switched to cartoon style");
-				ctx.takeScreenshot("16_mannequin_front_cartoon_20x");
+				// Our own setting decides how other players' eyes look: switch locally to cartoon.
+				// The other player (mannequin) keeps sending exactly the same data.
+				ctx.getInput().pressKey(ZoomController.STYLE_KEY);
+				ctx.waitTicks(5);
+				check(ctx.computeOnClient(client -> EyesConfig.get().eyeStyle) == EyeStyle.CARTOON, "local setting switched to cartoon");
+				Path cartoonFront = ctx.takeScreenshot("16_mannequin_front_cartoon_20x");
+				double styleDiff = changedPixels(stalkFront, cartoonFront);
+				log(String.format("   stalk vs cartoon (same remote data): %.2f %% pixels differ", styleDiff * 100));
+				check(styleDiff > 0.0003 && styleDiff < 0.15, "other player's eyes rendered in the viewer's own style (cartoon)");
 				server.runCommand("tp " + name + " 0.5 -60 4.5 180 0");
 				ctx.waitTicks(10);
 				ctx.takeScreenshot("17_mannequin_side_cartoon_20x");
-				sendToClient(server, mannequinId, EyeMath.toNet(0.54f), EyeStyle.CARTOON.id());
+				sendToClient(server, mannequinId, EyeMath.toNet(0.54f));
 				ctx.waitTicks(40);
 				ctx.takeScreenshot("18_mannequin_side_cartoon_5x");
-				sendToClient(server, mannequinId, 128, 7);
+				ctx.getInput().pressKey(ZoomController.STYLE_KEY);
 				ctx.waitTicks(5);
-				checkNear(eye(ctx, mannequinId), 0.54, 0.02, "invalid style id from network rejected");
+				check(ctx.computeOnClient(client -> EyesConfig.get().eyeStyle) == EyeStyle.STALK, "local setting back to stalk");
 
 				sendToClient(server, mannequinId, 0);
 				ctx.waitTicks(40);
@@ -268,13 +270,9 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 	}
 
 	private static void sendToClient(TestDedicatedServerContext server, int entityId, int value) {
-		sendToClient(server, entityId, value, EyeStyle.STALK.id());
-	}
-
-	private static void sendToClient(TestDedicatedServerContext server, int entityId, int value, int style) {
 		server.runOnServer(s -> {
 			for (ServerPlayer player : s.getPlayerList().getPlayers()) {
-				ServerPlayNetworking.send(player, new EyeStateS2CPayload(entityId, value, style));
+				ServerPlayNetworking.send(player, new EyeStateS2CPayload(entityId, value));
 			}
 		});
 	}

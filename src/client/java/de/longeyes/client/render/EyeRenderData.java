@@ -15,7 +15,7 @@ public final class EyeRenderData {
 	public float extension;
 	/** Interpolated spring velocity (per tick), drives the sag of the stalks. */
 	public float velocity;
-	/** Eye style chosen by this player. */
+	/** Eye style from the viewing client's own setting (applies to all players it sees). */
 	public EyeStyle style = EyeStyle.STALK;
 	/** Continuous time in ticks for the idle wobble. */
 	public float time;

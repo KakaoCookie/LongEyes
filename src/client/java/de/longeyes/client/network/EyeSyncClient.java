@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 import de.longeyes.EyeMath;
-import de.longeyes.EyeStyle;
 import de.longeyes.client.anim.EyeAnimationManager;
 import de.longeyes.client.zoom.ZoomController;
 import de.longeyes.config.EyesConfig;
@@ -23,7 +22,6 @@ import de.longeyes.network.EyeStateS2CPayload;
  */
 public final class EyeSyncClient {
 	private static int lastSent;
-	private static int lastSentStyle;
 	private static ClientLevel lastLevel;
 
 	private EyeSyncClient() {
@@ -33,7 +31,7 @@ public final class EyeSyncClient {
 		ClientPlayNetworking.registerGlobalReceiver(EyeStateS2CPayload.TYPE, (payload, context) -> {
 			int value = payload.extension();
 
-			if (value < 0 || value > EyeMath.NET_RESOLUTION || !EyeStyle.isValidId(payload.style())) {
+			if (value < 0 || value > EyeMath.NET_RESOLUTION) {
 				return;
 			}
 
@@ -42,7 +40,7 @@ public final class EyeSyncClient {
 				return;
 			}
 
-			EyeAnimationManager.setTarget(payload.entityId(), EyeMath.fromNet(value), EyeStyle.byId(payload.style()));
+			EyeAnimationManager.setTarget(payload.entityId(), EyeMath.fromNet(value));
 		});
 
 		ClientPlayConnectionEvents.JOIN.register((listener, sender, client) -> resetSession());
@@ -72,21 +70,16 @@ public final class EyeSyncClient {
 			return;
 		}
 
-		EyeStyle style = EyesConfig.get().eyeStyle;
-		EyeAnimationManager.setTarget(client.player.getId(), localTarget, style);
+		EyeAnimationManager.setTarget(client.player.getId(), localTarget);
 
 		if (!EyesConfig.get().syncMultiplayer) {
 			return;
 		}
 
 		int quantised = EyeMath.toNet(localTarget);
-		// A style change only matters while the eyes are out.
-		boolean styleChanged = quantised > 0 && style.id() != lastSentStyle;
-
-		if ((quantised != lastSent || styleChanged) && ClientPlayNetworking.canSend(EyeStateC2SPayload.TYPE)) {
-			ClientPlayNetworking.send(new EyeStateC2SPayload(quantised, style.id()));
+		if (quantised != lastSent && ClientPlayNetworking.canSend(EyeStateC2SPayload.TYPE)) {
+			ClientPlayNetworking.send(new EyeStateC2SPayload(quantised));
 			lastSent = quantised;
-			lastSentStyle = style.id();
 		}
 	}
 }

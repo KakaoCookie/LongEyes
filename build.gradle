@@ -4,7 +4,7 @@ plugins {
 }
 
 base {
-	archivesName = 'long-drive-eyes'
+	archivesName = 'long-eyes'
 }
 
 repositories {
@@ -16,7 +16,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"longdriveeyes" {
+		"longeyes" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
@@ -37,7 +37,7 @@ loom {
 fabricApi {
 	configureTests {
 		createSourceSet = true
-		modId = "longdriveeyes-gametest"
+		modId = "longeyes-gametest"
 		eula = true
 		username = "EyeTester"
 		enableGameTests = false

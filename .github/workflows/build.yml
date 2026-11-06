@@ -19,7 +19,7 @@ jobs:
       - run: ./gradlew build
       - uses: actions/upload-artifact@v7
         with:
-          name: long-drive-eyes-jar
+          name: long-eyes-jar
           path: build/libs/
 
   dedicated_server_test:
@@ -43,7 +43,7 @@ jobs:
           done
           sleep 10
           pkill -f 'net.fabricmc' || true
-          grep -E 'longdriveeyes|Long Drive Eyes|Done \(' server.log || true
+          grep -E 'longeyes|Long Eyes|Done \(' server.log || true
           if ! grep -q 'Done (' server.log; then tail -100 server.log; exit 1; fi
           if grep -E 'Exception|Error' server.log | grep -iv 'deprecat'; then echo "errors in server log"; exit 1; fi
 

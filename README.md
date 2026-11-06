@@ -1,7 +1,9 @@
-# Long Drive Eyes
+# Long Eyes
+
+<img src="src/main/resources/assets/longeyes/icon.png" width="128" align="right" alt="Long Eyes Icon">
 
 Fabric-Mod für **Minecraft Java 26.1.2**: Halte **C** gedrückt, um zu zoomen – und deine Augen
-fahren auf langen Stielen aus dem Kopf, wie in *The Long Drive*. Je weiter du mit dem Mausrad
+fahren aus dem Kopf, wie in *The Long Drive*. Je weiter du mit dem Mausrad
 hineinzoomst, desto weiter fahren sie heraus. Andere Spieler sehen das live.
 
 | Komponente | Version |
@@ -20,11 +22,11 @@ hineinzoomst, desto weiter fahren sie heraus. Andere Spieler sehen das live.
 ### Client
 1. Fabric Loader für 26.1.2 installieren (https://fabricmc.net/use/).
 2. `fabric-api-0.155.3+26.1.2.jar` (oder neuer für 26.1.2) in `.minecraft/mods/` legen.
-3. `long-drive-eyes-1.0.0.jar` in `.minecraft/mods/` legen.
+3. `long-eyes-1.1.0.jar` in `.minecraft/mods/` legen.
 
 ### Server (für Multiplayer-Sichtbarkeit)
 1. Fabric-Server 26.1.2 installieren.
-2. Fabric API und `long-drive-eyes-1.0.0.jar` in den `mods/`-Ordner des Servers legen.
+2. Fabric API und `long-eyes-1.1.0.jar` in den `mods/`-Ordner des Servers legen.
 3. Alle Spieler, die die Augen sehen bzw. zeigen sollen, brauchen die Mod ebenfalls auf dem Client.
 
 Die Mod läuft auf einem dedizierten Server, ohne Client- oder Rendering-Klassen zu laden
@@ -41,10 +43,20 @@ Auf Servern ohne die Mod funktioniert der Zoom lokal weiter; es werden dann einf
 | **C + Mausrad hoch** | stärker zoomen (bis 20×), Augen fahren weiter aus |
 | **C + Mausrad runter** | herauszoomen (bis 1×), Augen fahren ein |
 | **C** loslassen | Zoom aus, Augen ziehen sich vollständig zurück |
+| **K** | Augenstil wechseln: Stielaugen ↔ Cartoon-Augen (wird gespeichert) |
+
+### Augenstile
+
+| Stil | Aussehen |
+|---|---|
+| **Stielaugen** (`stalk`, Standard) | Augäpfel auf langen, dünnen Teleskopstielen – wie Spongebob als Schnecke |
+| **Cartoon-Augen** (`cartoon`) | Kein Stiel: nur der Augapfel kommt heraus, das Weiße wird zu einer langen Röhre gezogen, vorne sitzt die Pupille – wie bei Patrick |
+
+Der gewählte Stil wird mit synchronisiert: Andere Spieler sehen deine Augen in dem Stil, den *du* gewählt hast.
 
 * Während des Zoomens wechselt das Mausrad **keine** Hotbar-Slots; danach ist es wieder normal.
 * In Menüs/Screens ist der Zoom deaktiviert, Scrollen in Menüs bleibt unverändert.
-* Die Taste ist unter *Optionen → Steuerung → Tastenbelegung → Long Drive Eyes* umbelegbar.
+* Beide Tasten sind unter *Optionen → Steuerung → Tastenbelegung → Long Eyes* umbelegbar.
 * Hinweis: Vanilla belegt **C** zusätzlich mit „Schnellleiste speichern“ (nur im Kreativmodus relevant,
   zusammen mit einer Zifferntaste). Bei Bedarf eine der beiden Tasten umbelegen.
 
@@ -68,7 +80,7 @@ hängen leicht durch, wackeln minimal und peitschen bei schnellen Bewegungen nac
 
 ## Konfiguration
 
-Datei: `config/longdriveeyes.json` (wird beim ersten Start mit Standardwerten angelegt; ungültige
+Datei: `config/longeyes.json` (wird beim ersten Start mit Standardwerten angelegt; ungültige
 Werte werden beim Laden in gültige Bereiche geklemmt, defektes JSON fällt auf Standardwerte zurück).
 
 | Schlüssel | Standard | Bereich | Bedeutung |
@@ -78,6 +90,7 @@ Werte werden beim Laden in gültige Bereiche geklemmt, defektes JSON fällt auf 
 | `zoomStep` | 1.25 | 1.01–4 | Multiplikator pro Mausradschritt (1.25 = +25 %; 2× → 20× in ca. 10 Schritten) |
 | `smoothZoom` | true | – | Weiche Kameraübergänge (false = FOV springt sofort) |
 | `reduceSensitivity` | true | – | Maus-Empfindlichkeit proportional zum Zoom verringern |
+| `eyeStyle` | "stalk" | stalk / cartoon | Augenstil (im Spiel mit K umschaltbar) |
 | `maxEyeExtension` | 1.5 | 0.1–8 | Maximale Augenstiel-Länge in Blöcken |
 | `eyeExtensionSpeed` | 0.18 | 0.02–1 | Federhärte beim Ausfahren (höher = schneller) |
 | `eyeRetractionSpeed` | 0.25 | 0.02–1 | Federhärte beim Einfahren (höher = schneller) |
@@ -95,24 +108,25 @@ unterschiedlichen Configs.
 ## Architektur
 
 ```
-src/main/java/de/longdriveeyes/          (Client + Server, keine Client-Klassen)
-  LongDriveEyes.java                     Common-Entrypoint
+src/main/java/de/longeyes/          (Client + Server, keine Client-Klassen)
+  LongEyes.java                     Common-Entrypoint
   EyeMath.java                           Zoom → Ausfahrung, Netzwerk-Quantisierung
   config/EyesConfig.java                 JSON-Config (Gson), Validierung
-  network/EyeStateC2SPayload.java        Client → Server: Zielausfahrung (0..255)
-  network/EyeStateS2CPayload.java        Server → Client: (Entity-ID, Zielausfahrung)
+  EyeStyle.java                          Augenstile (stalk, cartoon)
+  network/EyeStateC2SPayload.java        Client → Server: Zielausfahrung (0..255), Stil
+  network/EyeStateS2CPayload.java        Server → Client: (Entity-ID, Zielausfahrung, Stil)
   network/EyeNetworking.java             Payload-Registrierung
   server/EyeSyncServer.java              Validierung, Rate-Limit, Weiterleitung
 
-src/client/java/de/longdriveeyes/client/ (nur Client)
-  LongDriveEyesClient.java               Client-Entrypoint, Layer-Registrierung, Tick
+src/client/java/de/longeyes/client/ (nur Client)
+  LongEyesClient.java               Client-Entrypoint, Layer-Registrierung, Tick
   zoom/ZoomController.java               Tastenbelegung, Zoom-Simulation (log-Raum, 20 Hz)
   anim/EyeAnimation.java                 Gedämpfte Feder pro Spieler
   anim/EyeAnimationManager.java          Animationen nach Entity-ID (leer, wenn niemand zoomt)
   network/EyeSyncClient.java             Senden bei Änderung, Empfang, Reset bei Disconnect/Levelwechsel
   render/EyeRenderData.java              RenderState-Daten (RenderStateDataKey)
   render/EyeStalkLayer.java              RenderLayer am Kopf-ModelPart des Spielermodells
-  render/EyeGeometry.java                3D-Boxen: Stiel mit Teleskopringen, abgerundeter Augapfel, Pupille, Glanzpunkt
+  render/EyeGeometry.java                3D-Geometrie: Stielaugen (Teleskopringe) und Cartoon-Augen (gezogene Röhre)
   mixin/AvatarRendererMixin.java         extractRenderState → schreibt EyeRenderData
   mixin/CameraMixin.java                 Camera.calculateFov → FOV / Zoomfaktor
   mixin/MouseHandlerMixin.java           onScroll (Zoom statt Hotbar), turnPlayer (Empfindlichkeit)
@@ -133,10 +147,10 @@ src/client/java/de/longdriveeyes/client/ (nur Client)
 * Unsichtbare Spieler bekommen keine Augen.
 
 ### Netzwerk
-* Gesendet wird nur die **Ziel**-Ausfahrung (1 VarInt), und nur, wenn sich der quantisierte Wert ändert
-  (C drücken, C loslassen, je Mausradschritt). Eine typische Zoom-Session erzeugt ~10–15 Pakete.
+* Gesendet werden nur die **Ziel**-Ausfahrung und der Stil (2 VarInts), und nur bei Änderung
+  (C drücken, C loslassen, je Mausradschritt, Stilwechsel während des Zoomens). Eine typische Zoom-Session erzeugt ~10–15 Pakete.
 * Jeder empfangende Client simuliert dieselbe Feder → flüssige Animation auch bei Latenz.
-* Server: Werte außerhalb 0..255 werden verworfen; max. 40 Pakete/Sekunde/Spieler (Flood-Schutz);
+* Server: Werte außerhalb 0..255 und unbekannte Stile werden verworfen; max. 40 Pakete/Sekunde/Spieler (Flood-Schutz);
   Weiterleitung höchstens 1× pro Tick und nur an Spieler, die den Sender tracken (`PlayerLookup.tracking`).
 * Neue Beobachter (Betreten der Sichtweite, Join, Respawn, Dimensionswechsel) erhalten den aktuellen
   Zustand einmalig über `EntityTrackingEvents.START_TRACKING`.
@@ -168,12 +182,12 @@ src/client/java/de/longdriveeyes/client/ (nur Client)
 ./gradlew build
 ```
 
-Ergebnis: `build/libs/long-drive-eyes-1.0.0.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
+Ergebnis: `build/libs/long-eyes-1.1.0.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
 `maven.fabricmc.net`, `piston-meta.mojang.com`, `piston-data.mojang.com` und `libraries.minecraft.net`.
 
 Alternativ das Projekt in ein GitHub-Repository pushen: Der enthaltene Workflow
 `.github/workflows/build.yml` baut das Jar automatisch und stellt es als Artefakt
-`long-drive-eyes-jar` bereit.
+`long-eyes-jar` bereit.
 
 ### Lokal testen
 ```bash
@@ -192,14 +206,20 @@ Bei jedem Push laufen drei Jobs (`.github/workflows/build.yml`):
 
 | Job | Inhalt |
 |---|---|
-| `build` | Kompiliert Main-, Client- und Gametest-Sourcesets, baut das Jar (Artefakt `long-drive-eyes-jar`) |
+| `build` | Kompiliert Main-, Client- und Gametest-Sourcesets, baut das Jar (Artefakt `long-eyes-jar`) |
 | `dedicated_server_test` | Startet einen echten dedizierten Fabric-Server mit der Mod bis „Done“ und prüft, dass keine Fehler oder Client-Klassen auftreten |
-| `client_gametest` | Echter Client + echter dedizierter Server (Fabric Client GameTest API), gesteuert über simulierte Tastatur- und Mauseingaben, 33 Checks + Screenshots |
+| `client_gametest` | Echter Client + echter dedizierter Server (Fabric Client GameTest API), gesteuert über simulierte Tastatur- und Mauseingaben, Checks + Screenshots |
 
 Geprüft wird unter anderem: alle Mixins greifen; C = Standardtaste; 2× beim Drücken; Mausrad
 (5 Schritte → 6,10×, Begrenzung auf 20×, herauszoomen); Hotbar bleibt beim Zoomen unverändert und
 funktioniert danach wieder; Inventar öffnen deaktiviert den Zoom; Loslassen stellt das FOV wieder her;
 Client → Server-Synchronisation (Serverzustand 59 / 154 / 255 / 0); Server → Client-Synchronisation
 auf einen anderen Avatar (ein Mannequin ersetzt den zweiten Spieler) bei 2×/5×/10×/20× inklusive
-Pixelvergleich; ungültige Netzwerkwerte werden verworfen; Disconnect setzt alles zurück.
+Pixelvergleich; ungültige Netzwerkwerte werden verworfen; Disconnect setzt alles zurück; Stilwechsel mit K inkl. Synchronisierung und Darstellung beider Stile.
 Die Screenshots werden auf den Branch `test-screenshots` gepusht.
+
+---
+
+*Das Mod-Icon zeigt eine Szene aus „SpongeBob Schwammkopf“ (© Viacom/Nickelodeon) und dient nur als
+Fan-Referenz. Für eine öffentliche Veröffentlichung (z. B. Modrinth/CurseForge) sollte es durch ein
+eigenes Bild ersetzt werden.*

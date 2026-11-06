@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"package": "de.longeyes.client.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"AvatarRendererMixin",
+		"CameraMixin",
+		"MouseHandlerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

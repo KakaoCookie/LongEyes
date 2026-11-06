@@ -1,26 +1,26 @@
 {
 	"schemaVersion": 1,
-	"id": "longdriveeyes",
+	"id": "longeyes",
 	"version": "${version}",
-	"name": "Long Drive Eyes",
+	"name": "Long Eyes",
 	"description": "Hold C to zoom - and watch your eyes telescope out of your head on long stalks, just like in The Long Drive. Other players see it live.",
 	"authors": [
-		"Long Drive Eyes contributors"
+		"Long Eyes contributors"
 	],
 	"license": "MIT",
-	"icon": "assets/longdriveeyes/icon.png",
+	"icon": "assets/longeyes/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"de.longdriveeyes.LongDriveEyes"
+			"de.longeyes.LongEyes"
 		],
 		"client": [
-			"de.longdriveeyes.client.LongDriveEyesClient"
+			"de.longeyes.client.LongEyesClient"
 		]
 	},
 	"mixins": [
 		{
-			"config": "longdriveeyes.client.mixins.json",
+			"config": "longeyes.client.mixins.json",
 			"environment": "client"
 		}
 	],

@@ -105,6 +105,17 @@ public final class ZoomController {
 		return Math.exp(logZoom);
 	}
 
+	/** Multiplier for the mouse turn speed at the current zoom (1 = unchanged). */
+	public static double getSensitivityFactor() {
+		EyesConfig config = EyesConfig.get();
+
+		if (!active || !config.reduceSensitivity) {
+			return 1.0;
+		}
+
+		return Math.pow(Math.max(1.0, getCurrentZoomDivisor()), -config.zoomSensitivityScaling);
+	}
+
 	/** Target eye extension 0..1 of the local player derived from the selected zoom level. */
 	public static float getTargetEyeExtension() {
 		return active ? EyeMath.zoomToExtension(targetZoom, EyesConfig.get().eyeFullZoom) : 0.0f;

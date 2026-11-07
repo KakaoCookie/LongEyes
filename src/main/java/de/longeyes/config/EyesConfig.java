@@ -42,8 +42,18 @@ public final class EyesConfig {
 	public boolean smoothZoom = true;
 	/** Reduce mouse sensitivity proportional to the zoom factor. */
 	public boolean reduceSensitivity = true;
+	/**
+	 * How strongly the mouse slows down with zoom: speed = zoom ^ -value.
+	 * 0.35 -> 2x: 78 %, 5x: 57 %, 10x: 45 %, 20x: 35 %, 40x: 27 %. 0 = never slower, 1 = fully proportional.
+	 */
+	public double zoomSensitivityScaling = 0.35;
 	/** Cinematic (smooth, gliding) mouse movement while zooming, like OptiFine/Zoomify zoom. */
 	public boolean cinematicZoom = true;
+	/**
+	 * How quickly the cinematic camera catches up and stops, relative to vanilla's smooth camera
+	 * (1 = vanilla, very long glide; 6 = smooth start, stops after ~0.5 s).
+	 */
+	public double cinematicResponsiveness = 6.0;
 	/** Hide the first-person hand / held item while zooming. */
 	public boolean hideHandWhileZooming = true;
 
@@ -128,6 +138,8 @@ public final class EyesConfig {
 
 		maxZoom = clamp(maxZoom, 1.0, 100.0, 40.0);
 		eyeFullZoom = clamp(eyeFullZoom, 1.01, 100.0, 20.0);
+		cinematicResponsiveness = clamp(cinematicResponsiveness, 1.0, 20.0, 6.0);
+		zoomSensitivityScaling = clamp(zoomSensitivityScaling, 0.0, 1.0, 0.35);
 		defaultZoom = clamp(defaultZoom, 1.0, maxZoom, Math.min(2.0, maxZoom));
 		zoomStep = clamp(zoomStep, 1.01, 4.0, 1.25);
 		maxEyeExtension = clamp(maxEyeExtension, 0.1, 8.0, 1.5);

@@ -22,11 +22,11 @@ hineinzoomst, desto weiter fahren sie heraus. Andere Spieler sehen das live.
 ### Client
 1. Fabric Loader für 26.1.2 installieren (https://fabricmc.net/use/).
 2. `fabric-api-0.155.3+26.1.2.jar` (oder neuer für 26.1.2) in `.minecraft/mods/` legen.
-3. `long-eyes-1.3.0.jar` in `.minecraft/mods/` legen.
+3. `long-eyes-1.3.1.jar` in `.minecraft/mods/` legen.
 
 ### Server (für Multiplayer-Sichtbarkeit)
 1. Fabric-Server 26.1.2 installieren.
-2. Fabric API und `long-eyes-1.3.0.jar` in den `mods/`-Ordner des Servers legen.
+2. Fabric API und `long-eyes-1.3.1.jar` in den `mods/`-Ordner des Servers legen.
 3. Alle Spieler, die die Augen sehen bzw. zeigen sollen, brauchen die Mod ebenfalls auf dem Client.
 
 Die Mod läuft auf einem dedizierten Server, ohne Client- oder Rendering-Klassen zu laden
@@ -98,7 +98,9 @@ Werte werden beim Laden in gültige Bereiche geklemmt, defektes JSON fällt auf 
 | `zoomStep` | 1.25 | 1.01–4 | Multiplikator pro Mausradschritt (1.25 = +25 %; 2× → 40× in ca. 13 Schritten) |
 | `smoothZoom` | true | – | Weiche Kameraübergänge (false = FOV springt sofort) |
 | `cinematicZoom` | true | – | Weiche, gleitende Mausbewegung beim Zoomen (filmische Kamera, nur während des Zooms) |
-| `reduceSensitivity` | true | – | Maus-Empfindlichkeit proportional zum Zoom verringern |
+| `cinematicResponsiveness` | 6.0 | 1–20 | Wie schnell die Kamera nachzieht und stoppt (1 = Vanilla, sehr langes Nachgleiten; 6 = weich, steht nach ca. ½ s) |
+| `reduceSensitivity` | true | – | Maus-Empfindlichkeit mit dem Zoom verringern |
+| `zoomSensitivityScaling` | 0.35 | 0–1 | Wie stark: Tempo = Zoom^-Wert → 2×: 78 %, 5×: 57 %, 10×: 45 %, 20×: 35 %, 40×: 27 % (0 = nie langsamer, 1 = voll proportional) |
 | `hideHandWhileZooming` | true | – | Eigene Hand beim Zoomen ausblenden (nur im eigenen Bild) |
 | `eyeStyle` | "stalk" | stalk / cartoon | Augenstil (im Spiel mit K umschaltbar) |
 | `maxEyeExtension` | 1.5 | 0.1–8 | Maximale Augenstiel-Länge in Blöcken |
@@ -193,7 +195,7 @@ src/client/java/de/longeyes/client/ (nur Client)
 ./gradlew build
 ```
 
-Ergebnis: `build/libs/long-eyes-1.3.0.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
+Ergebnis: `build/libs/long-eyes-1.3.1.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
 `maven.fabricmc.net`, `piston-meta.mojang.com`, `piston-data.mojang.com` und `libraries.minecraft.net`.
 
 Alternativ das Projekt in ein GitHub-Repository pushen: Der enthaltene Workflow

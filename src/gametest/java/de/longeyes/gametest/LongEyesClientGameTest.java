@@ -161,20 +161,47 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 					client.options.smoothCamera = false;
 					EyesConfig.get().cinematicZoom = true;
 				});
-				log(String.format("   cinematic zoom:      total turn %.2f deg, gliding after first tick %.2f deg", cinematic[0], cinematic[1]));
-				log(String.format("   vanilla smooth cam:  total turn %.2f deg, gliding after first tick %.2f deg", vanillaSmooth[0], vanillaSmooth[1]));
-				log(String.format("   direct:              total turn %.2f deg, gliding after first tick %.2f deg", direct[0], direct[1]));
+				log(String.format("   cinematic zoom:  total %.2f deg | after 1st tick %.2f | after 0.5 s %.2f", cinematic[0], cinematic[1], cinematic[2]));
+				log(String.format("   vanilla F8 cam:  total %.2f deg | after 1st tick %.2f | after 0.5 s %.2f", vanillaSmooth[0], vanillaSmooth[1], vanillaSmooth[2]));
+				log(String.format("   direct:          total %.2f deg | after 1st tick %.2f | after 0.5 s %.2f", direct[0], direct[1], direct[2]));
 				check(direct[0] > 0.5f, "mouse movement turns the camera while zooming");
 				check(direct[1] < 0.1f * direct[0] + 0.05f, "with cinematicZoom off the camera follows directly");
-				checkNear(cinematic[0], vanillaSmooth[0], 0.5, "cinematic zoom behaves like vanilla's smooth camera (total turn)");
-				checkNear(cinematic[1], vanillaSmooth[1], 0.5, "cinematic zoom behaves like vanilla's smooth camera (gliding)");
-				check(Math.abs(cinematic[0] - direct[0]) > 0.5f || Math.abs(cinematic[1] - direct[1]) > 0.3f, "cinematic zoom differs from direct mouse movement");
+				checkNear(cinematic[0], direct[0], 0.05 * direct[0], "cinematic zoom reaches the full turn (no lost movement)");
+				check(cinematic[1] > 0.05f * cinematic[0], "cinematic zoom is still smooth (glides a little)");
+				check(cinematic[2] < 0.05f * cinematic[0], "camera stops within ~0.5 s after the mouse stops (no long trailing)");
 				check(!ctx.computeOnClient(client -> client.options.smoothCamera), "vanilla 'smooth camera' option itself is unchanged");
+
+				// ---- 4c. Mouse speed scales gently with zoom (measured without smoothing) ----
+				ctx.runOnClient(client -> EyesConfig.get().cinematicZoom = false);
+				double divLow = divisor(ctx);
+				float turnLow = measureGlide(ctx)[0];
+
+				for (int i = 0; i < 10; i++) {
+					ctx.getInput().scroll(1.0);
+					ctx.waitTick();
+				}
+
+				ctx.waitTicks(20);
+				double divHigh = divisor(ctx);
+				float turnHigh = measureGlide(ctx)[0];
+
+				for (int i = 0; i < 10; i++) {
+					ctx.getInput().scroll(-1.0);
+					ctx.waitTick();
+				}
+
+				ctx.waitTicks(20);
+				ctx.runOnClient(client -> EyesConfig.get().cinematicZoom = true);
 
 				// ---- 5. Release ----
 				ctx.getInput().releaseKey(ZoomController.ZOOM_KEY);
 				ctx.waitTicks(20);
 				check(!ctx.computeOnClient(client -> ZoomController.isActive()), "C released -> zoom off");
+				float turnNone = measureGlide(ctx)[0];
+				log(String.format("   mouse turn: no zoom %.2f deg | %.1fx %.2f deg (%.0f %%) | %.1fx %.2f deg (%.0f %%)",
+						turnNone, divLow, turnLow, 100.0 * turnLow / turnNone, divHigh, turnHigh, 100.0 * turnHigh / turnNone));
+				checkNear(turnLow / turnNone, Math.pow(divLow, -0.35), 0.04, "2x zoom is only slightly slower (~78 %)");
+				checkNear(turnHigh / turnNone, Math.pow(divHigh, -0.35), 0.04, "high zoom is clearly slower (~36 % at ~19x)");
 				ctx.waitTicks(2);
 				ctx.takeScreenshot("00_hand_back_after_zoom");
 				log("   (hand visible again: see screenshot 00_hand_back_after_zoom)");
@@ -305,7 +332,7 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 		log("ALL " + passed + " CHECKS PASSED");
 	}
 
-	/** Moves the mouse once and returns {total yaw change, yaw change after the first tick}. */
+	/** Moves the mouse once; returns {total yaw change, change after the first tick, change after 0.5 s}. */
 	private static float[] measureGlide(ClientGameTestContext ctx) {
 		// Vanilla ignores the first mouse move after the cursor was (re)grabbed, e.g. after closing a menu.
 		ctx.getInput().moveCursor(1.0, 0.0);
@@ -314,9 +341,11 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 		ctx.getInput().moveCursor(300.0, 0.0);
 		ctx.waitTick();
 		float afterFirst = ctx.computeOnClient(client -> client.player.getYRot());
+		ctx.waitTicks(9);
+		float afterHalfSecond = ctx.computeOnClient(client -> client.player.getYRot());
 		ctx.waitTicks(30);
 		float end = ctx.computeOnClient(client -> client.player.getYRot());
-		return new float[] {Math.abs(end - start), Math.abs(end - afterFirst)};
+		return new float[] {Math.abs(end - start), Math.abs(end - afterFirst), Math.abs(end - afterHalfSecond)};
 	}
 
 	private static Entity findMannequin(Minecraft client) {

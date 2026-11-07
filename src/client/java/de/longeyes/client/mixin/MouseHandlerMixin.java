@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.MouseHandler;
@@ -45,21 +46,36 @@ public abstract class MouseHandlerMixin {
 		return original || (ZoomController.isActive() && EyesConfig.get().cinematicZoom);
 	}
 
-	/** Optional: scale mouse sensitivity so that aiming feels the same at every zoom level. */
+	/**
+	 * Scales the mouse speed with the zoom: speed = zoom ^ -zoomSensitivityScaling (2x barely slower,
+	 * 20x clearly slower). The sensitivity option itself is never changed.
+	 */
 	@ModifyExpressionValue(method = "turnPlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;get()Ljava/lang/Object;", ordinal = 0))
 	private Object longeyes$zoomSensitivity(Object original) {
-		if (!ZoomController.isActive() || !EyesConfig.get().reduceSensitivity || !(original instanceof Double sensitivity)) {
+		double factor = ZoomController.getSensitivityFactor();
+
+		if (factor >= 0.9999 || !(original instanceof Double sensitivity)) {
 			return original;
 		}
 
-		double divisor = ZoomController.getCurrentZoomDivisor();
+		// Vanilla turn speed is (s * 0.6 + 0.2)^3 * 8. Multiply it exactly by the factor and solve for s
+		// (values below 0 are fine for the formula and avoid a hard lower limit).
+		double f = (sensitivity * 0.6 + 0.2) * Math.cbrt(factor);
+		return (f - 0.2) / 0.6;
+	}
 
-		if (divisor <= 1.0001) {
-			return original;
+	/**
+	 * Glide speed of the cinematic camera while zooming. Vanilla's smooth camera trails behind for a
+	 * long time and gets even slower with lower sensitivity; while zooming it catches up
+	 * {@code cinematicResponsiveness} times faster (smooth start, stops shortly after the mouse stops),
+	 * independent of the zoom level. Vanilla's own smooth camera (F8) without zoom is unchanged.
+	 */
+	@ModifyArg(method = "turnPlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/SmoothDouble;getNewDeltaValue(DD)D"), index = 1)
+	private double longeyes$glideSpeed(double smoothing) {
+		if (!ZoomController.isActive()) {
+			return smoothing;
 		}
 
-		// Vanilla turn speed is (s * 0.6 + 0.2)^3 * 8. Divide that by the zoom factor and solve for s.
-		double f = (sensitivity * 0.6 + 0.2) / Math.cbrt(divisor);
-		return Math.max(0.0, (f - 0.2) / 0.6);
+		return smoothing * EyesConfig.get().cinematicResponsiveness / ZoomController.getSensitivityFactor();
 	}
 }

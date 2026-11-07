@@ -22,11 +22,11 @@ hineinzoomst, desto weiter fahren sie heraus. Andere Spieler sehen das live.
 ### Client
 1. Fabric Loader für 26.1.2 installieren (https://fabricmc.net/use/).
 2. `fabric-api-0.155.3+26.1.2.jar` (oder neuer für 26.1.2) in `.minecraft/mods/` legen.
-3. `long-eyes-1.1.1.jar` in `.minecraft/mods/` legen.
+3. `long-eyes-1.2.0.jar` in `.minecraft/mods/` legen.
 
 ### Server (für Multiplayer-Sichtbarkeit)
 1. Fabric-Server 26.1.2 installieren.
-2. Fabric API und `long-eyes-1.1.1.jar` in den `mods/`-Ordner des Servers legen.
+2. Fabric API und `long-eyes-1.2.0.jar` in den `mods/`-Ordner des Servers legen.
 3. Alle Spieler, die die Augen sehen bzw. zeigen sollen, brauchen die Mod ebenfalls auf dem Client.
 
 Die Mod läuft auf einem dedizierten Server, ohne Client- oder Rendering-Klassen zu laden
@@ -40,7 +40,7 @@ Auf Servern ohne die Mod funktioniert der Zoom lokal weiter; es werden dann einf
 | Eingabe | Wirkung |
 |---|---|
 | **C** halten | Zoom an (Start 2×), Augen fahren leicht aus |
-| **C + Mausrad hoch** | stärker zoomen (bis 20×), Augen fahren weiter aus |
+| **C + Mausrad hoch** | stärker zoomen (bis 40×), Augen fahren bis 20× weiter aus |
 | **C + Mausrad runter** | herauszoomen (bis 1×), Augen fahren ein |
 | **C** loslassen | Zoom aus, Augen ziehen sich vollständig zurück |
 | **K** | Augenstil wechseln: Stielaugen ↔ Cartoon-Augen (wird gespeichert) |
@@ -57,6 +57,8 @@ Stil, den er selbst eingestellt hat. Wer Cartoon-Augen wählt, sieht bei allen P
 wählt, sieht bei allen Stielaugen. Der Stil wird deshalb nicht übertragen.
 
 * Während des Zoomens wechselt das Mausrad **keine** Hotbar-Slots; danach ist es wieder normal.
+* Während des Zoomens wird die eigene Hand (Ego-Ansicht) ausgeblendet – nur im eigenen Bild. Andere Spieler
+  sehen Arm und Item unverändert, und am gehaltenen Item ändert sich nichts.
 * In Menüs/Screens ist der Zoom deaktiviert, Scrollen in Menüs bleibt unverändert.
 * Beide Tasten sind unter *Optionen → Steuerung → Tastenbelegung → Long Eyes* umbelegbar.
 * Hinweis: Vanilla belegt **C** zusätzlich mit „Schnellleiste speichern“ (nur im Kreativmodus relevant,
@@ -72,9 +74,10 @@ wählt, sieht bei allen Stielaugen. Der Stil wird deshalb nicht übertragen.
 | 10× | 0,77 – lange Stiele |
 | 15× | 0,90 – sehr weit |
 | 20× | 1,00 – maximal (Standard 1,5 Blöcke) |
+| 20×–40× | 1,00 – die Augen bleiben maximal lang, nur die Kamera zoomt weiter |
 
 Die Ausfahrung wird stufenlos logarithmisch aus dem Zoomfaktor berechnet
-(`ln(zoom) / ln(maxZoom)`) und von einer gedämpften Feder animiert: Beim Ausfahren gibt es einen
+(`ln(zoom) / ln(eyeFullZoom)`, darüber begrenzt auf 1) und von einer gedämpften Feder animiert: Beim Ausfahren gibt es einen
 kleinen Cartoon-Überschwinger (~5 %), beim Einfahren gleiten die Augen weich zurück. Lange Stiele
 hängen leicht durch, wackeln minimal und peitschen bei schnellen Bewegungen nach.
 
@@ -87,11 +90,13 @@ Werte werden beim Laden in gültige Bereiche geklemmt, defektes JSON fällt auf 
 
 | Schlüssel | Standard | Bereich | Bedeutung |
 |---|---|---|---|
-| `maxZoom` | 20.0 | 1–100 | Maximaler Zoomfaktor |
+| `maxZoom` | 40.0 | 1–100 | Maximaler Zoomfaktor |
+| `eyeFullZoom` | 20.0 | 1.01–100 | Ab diesem Zoom sind die Augen voll ausgefahren und wachsen nicht weiter |
 | `defaultZoom` | 2.0 | 1–maxZoom | Zoom beim Drücken von C |
-| `zoomStep` | 1.25 | 1.01–4 | Multiplikator pro Mausradschritt (1.25 = +25 %; 2× → 20× in ca. 10 Schritten) |
+| `zoomStep` | 1.25 | 1.01–4 | Multiplikator pro Mausradschritt (1.25 = +25 %; 2× → 40× in ca. 13 Schritten) |
 | `smoothZoom` | true | – | Weiche Kameraübergänge (false = FOV springt sofort) |
 | `reduceSensitivity` | true | – | Maus-Empfindlichkeit proportional zum Zoom verringern |
+| `hideHandWhileZooming` | true | – | Eigene Hand beim Zoomen ausblenden (nur im eigenen Bild) |
 | `eyeStyle` | "stalk" | stalk / cartoon | Augenstil (im Spiel mit K umschaltbar) |
 | `maxEyeExtension` | 1.5 | 0.1–8 | Maximale Augenstiel-Länge in Blöcken |
 | `eyeExtensionSpeed` | 0.18 | 0.02–1 | Federhärte beim Ausfahren (höher = schneller) |
@@ -131,6 +136,7 @@ src/client/java/de/longeyes/client/ (nur Client)
   render/EyeGeometry.java                3D-Geometrie: Stielaugen (Teleskopringe) und Cartoon-Augen (gezogene Röhre)
   mixin/AvatarRendererMixin.java         extractRenderState → schreibt EyeRenderData
   mixin/CameraMixin.java                 Camera.calculateFov → FOV / Zoomfaktor
+  mixin/ItemInHandRendererMixin.java     renderHandsWithItems → Hand beim Zoomen ausblenden
   mixin/MouseHandlerMixin.java           onScroll (Zoom statt Hotbar), turnPlayer (Empfindlichkeit)
 ```
 
@@ -184,7 +190,7 @@ src/client/java/de/longeyes/client/ (nur Client)
 ./gradlew build
 ```
 
-Ergebnis: `build/libs/long-eyes-1.1.1.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
+Ergebnis: `build/libs/long-eyes-1.2.0.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
 `maven.fabricmc.net`, `piston-meta.mojang.com`, `piston-data.mojang.com` und `libraries.minecraft.net`.
 
 Alternativ das Projekt in ein GitHub-Repository pushen: Der enthaltene Workflow

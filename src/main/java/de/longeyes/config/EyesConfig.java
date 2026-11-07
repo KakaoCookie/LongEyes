@@ -24,11 +24,16 @@ public final class EyesConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private static final String FILE_NAME = LongEyes.MOD_ID + ".json";
 
+	private static final int CURRENT_VERSION = 2;
+
 	private static volatile EyesConfig instance = new EyesConfig();
+
+	/** Version of the config layout, used to migrate old files. */
+	public int configVersion = CURRENT_VERSION;
 
 	// ---- Zoom ----
 	/** Maximum zoom factor (1..100). */
-	public double maxZoom = 20.0;
+	public double maxZoom = 40.0;
 	/** Zoom factor applied when the zoom key is pressed. */
 	public double defaultZoom = 2.0;
 	/** Multiplicative change per mouse wheel notch (1.25 = +25 % per notch). */
@@ -37,11 +42,15 @@ public final class EyesConfig {
 	public boolean smoothZoom = true;
 	/** Reduce mouse sensitivity proportional to the zoom factor. */
 	public boolean reduceSensitivity = true;
+	/** Hide the first-person hand / held item while zooming. */
+	public boolean hideHandWhileZooming = true;
 
 	// ---- Eyes ----
 	/** "stalk" = eyeballs on thin stalks, "cartoon" = stretched eyeball (switch in game with K). */
 	public EyeStyle eyeStyle = EyeStyle.STALK;
-	/** Maximum eye stalk length in blocks at maximum zoom. */
+	/** Zoom factor at which the eyes reach their full length; zooming further does not extend them more. */
+	public double eyeFullZoom = 20.0;
+	/** Maximum eye stalk length in blocks (reached at eyeFullZoom). */
 	public double maxEyeExtension = 1.5;
 	/** Spring stiffness while extending (0.02..1, higher = faster). */
 	public double eyeExtensionSpeed = 0.18;
@@ -102,11 +111,21 @@ public final class EyesConfig {
 	}
 
 	private void validate() {
+		// v1 (Long Eyes 1.0/1.1) had maxZoom 20 as default: move untouched defaults to the new 40x.
+		if (configVersion < 2) {
+			if (maxZoom == 20.0) {
+				maxZoom = 40.0;
+			}
+
+			configVersion = CURRENT_VERSION;
+		}
+
 		if (eyeStyle == null) {
 			eyeStyle = EyeStyle.STALK;
 		}
 
-		maxZoom = clamp(maxZoom, 1.0, 100.0, 20.0);
+		maxZoom = clamp(maxZoom, 1.0, 100.0, 40.0);
+		eyeFullZoom = clamp(eyeFullZoom, 1.01, 100.0, 20.0);
 		defaultZoom = clamp(defaultZoom, 1.0, maxZoom, Math.min(2.0, maxZoom));
 		zoomStep = clamp(zoomStep, 1.01, 4.0, 1.25);
 		maxEyeExtension = clamp(maxEyeExtension, 0.1, 8.0, 1.5);

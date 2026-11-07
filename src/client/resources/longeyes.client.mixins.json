@@ -5,6 +5,7 @@
 	"client": [
 		"AvatarRendererMixin",
 		"CameraMixin",
+		"ItemInHandRendererMixin",
 		"MouseHandlerMixin"
 	],
 	"injectors": {

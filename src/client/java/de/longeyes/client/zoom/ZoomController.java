@@ -107,7 +107,7 @@ public final class ZoomController {
 
 	/** Target eye extension 0..1 of the local player derived from the selected zoom level. */
 	public static float getTargetEyeExtension() {
-		return active ? EyeMath.zoomToExtension(targetZoom, EyesConfig.get().maxZoom) : 0.0f;
+		return active ? EyeMath.zoomToExtension(targetZoom, EyesConfig.get().eyeFullZoom) : 0.0f;
 	}
 
 	public static void reset() {

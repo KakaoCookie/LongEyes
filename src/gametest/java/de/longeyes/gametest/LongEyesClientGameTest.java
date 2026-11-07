@@ -96,15 +96,27 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 				checkNear(serverState(ctx, server, uuid), expectedNet(expected), 0, "server state follows wheel zoom");
 				checkNear(localEye(ctx, ownId), EyeMath.zoomToExtension(expected, 20.0), 0.02, "own eye animation reached target");
 
-				for (int i = 0; i < 25; i++) {
+				// Hand is hidden while zooming (client-side view only): compare with the option switched off.
+				ctx.runOnClient(client -> EyesConfig.get().hideHandWhileZooming = false);
+				ctx.waitTicks(2);
+				Path withHand = ctx.takeScreenshot("00_zoom_hand_option_off");
+				ctx.runOnClient(client -> EyesConfig.get().hideHandWhileZooming = true);
+				ctx.waitTicks(2);
+				Path withoutHand = ctx.takeScreenshot("00_zoom_hand_hidden");
+				double handDiff = changedPixels(withHand, withoutHand);
+				log(String.format("   hand visible vs hidden while zooming: %.2f %% pixels differ", handDiff * 100));
+				check(handDiff > 0.005 && handDiff < 0.3, "first-person hand disappears while zooming");
+
+				for (int i = 0; i < 40; i++) {
 					ctx.getInput().scroll(1.0);
 					ctx.waitTick();
 				}
 
 				ctx.waitTicks(25);
-				checkNear(divisor(ctx), 20.0, 0.3, "zoom clamps at maxZoom 20x");
+				checkNear(divisor(ctx), 40.0, 0.5, "zoom clamps at maxZoom 40x");
 				checkNear(serverState(ctx, server, uuid), 255, 0, "server state at maximum (255)");
-				ctx.takeScreenshot("01_first_person_zoom_20x");
+				checkNear(localEye(ctx, ownId), 1.0, 0.01, "eyes at full length at 40x (no further than at 20x)");
+				ctx.takeScreenshot("01_first_person_zoom_40x");
 
 				for (int i = 0; i < 3; i++) {
 					ctx.getInput().scroll(-1.0);
@@ -112,7 +124,17 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 				}
 
 				ctx.waitTicks(20);
-				checkNear(divisor(ctx), 20.0 / Math.pow(1.25, 3), 0.3, "3 notches down -> zoom out to ~10.2x");
+				checkNear(divisor(ctx), 40.0 / Math.pow(1.25, 3), 0.4, "3 notches down -> ~20.5x");
+				checkNear(serverState(ctx, server, uuid), 255, 0, "eyes still at full length between 20x and 40x");
+
+				for (int i = 0; i < 4; i++) {
+					ctx.getInput().scroll(-1.0);
+					ctx.waitTick();
+				}
+
+				ctx.waitTicks(20);
+				checkNear(divisor(ctx), 40.0 / Math.pow(1.25, 7), 0.2, "4 more notches down -> ~8.4x");
+				checkNear(serverState(ctx, server, uuid), expectedNet(40.0 / Math.pow(1.25, 7)), 0, "eyes retract again below 20x");
 
 				// ---- 4. Menus disable zoom ----
 				ctx.getInput().pressKey(options -> options.keyInventory);
@@ -128,6 +150,9 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 				ctx.getInput().releaseKey(ZoomController.ZOOM_KEY);
 				ctx.waitTicks(20);
 				check(!ctx.computeOnClient(client -> ZoomController.isActive()), "C released -> zoom off");
+				ctx.waitTicks(2);
+				ctx.takeScreenshot("00_hand_back_after_zoom");
+				log("   (hand visible again: see screenshot 00_hand_back_after_zoom)");
 				checkNear(divisor(ctx), 1.0, 0.01, "FOV back to normal");
 				checkNear(serverState(ctx, server, uuid), 0, 0, "server state back to 0");
 				ctx.waitTicks(40);

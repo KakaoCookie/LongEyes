@@ -22,11 +22,11 @@ hineinzoomst, desto weiter fahren sie heraus. Andere Spieler sehen das live.
 ### Client
 1. Fabric Loader für 26.1.2 installieren (https://fabricmc.net/use/).
 2. `fabric-api-0.155.3+26.1.2.jar` (oder neuer für 26.1.2) in `.minecraft/mods/` legen.
-3. `long-eyes-1.2.0.jar` in `.minecraft/mods/` legen.
+3. `long-eyes-1.3.0.jar` in `.minecraft/mods/` legen.
 
 ### Server (für Multiplayer-Sichtbarkeit)
 1. Fabric-Server 26.1.2 installieren.
-2. Fabric API und `long-eyes-1.2.0.jar` in den `mods/`-Ordner des Servers legen.
+2. Fabric API und `long-eyes-1.3.0.jar` in den `mods/`-Ordner des Servers legen.
 3. Alle Spieler, die die Augen sehen bzw. zeigen sollen, brauchen die Mod ebenfalls auf dem Client.
 
 Die Mod läuft auf einem dedizierten Server, ohne Client- oder Rendering-Klassen zu laden
@@ -57,6 +57,8 @@ Stil, den er selbst eingestellt hat. Wer Cartoon-Augen wählt, sieht bei allen P
 wählt, sieht bei allen Stielaugen. Der Stil wird deshalb nicht übertragen.
 
 * Während des Zoomens wechselt das Mausrad **keine** Hotbar-Slots; danach ist es wieder normal.
+* Während des Zoomens gleitet die Kamera weich hinterher (filmische Kamera) – die Vanilla-Option selbst
+  wird dabei nicht verändert.
 * Während des Zoomens wird die eigene Hand (Ego-Ansicht) ausgeblendet – nur im eigenen Bild. Andere Spieler
   sehen Arm und Item unverändert, und am gehaltenen Item ändert sich nichts.
 * In Menüs/Screens ist der Zoom deaktiviert, Scrollen in Menüs bleibt unverändert.
@@ -95,6 +97,7 @@ Werte werden beim Laden in gültige Bereiche geklemmt, defektes JSON fällt auf 
 | `defaultZoom` | 2.0 | 1–maxZoom | Zoom beim Drücken von C |
 | `zoomStep` | 1.25 | 1.01–4 | Multiplikator pro Mausradschritt (1.25 = +25 %; 2× → 40× in ca. 13 Schritten) |
 | `smoothZoom` | true | – | Weiche Kameraübergänge (false = FOV springt sofort) |
+| `cinematicZoom` | true | – | Weiche, gleitende Mausbewegung beim Zoomen (filmische Kamera, nur während des Zooms) |
 | `reduceSensitivity` | true | – | Maus-Empfindlichkeit proportional zum Zoom verringern |
 | `hideHandWhileZooming` | true | – | Eigene Hand beim Zoomen ausblenden (nur im eigenen Bild) |
 | `eyeStyle` | "stalk" | stalk / cartoon | Augenstil (im Spiel mit K umschaltbar) |
@@ -137,7 +140,7 @@ src/client/java/de/longeyes/client/ (nur Client)
   mixin/AvatarRendererMixin.java         extractRenderState → schreibt EyeRenderData
   mixin/CameraMixin.java                 Camera.calculateFov → FOV / Zoomfaktor
   mixin/ItemInHandRendererMixin.java     renderHandsWithItems → Hand beim Zoomen ausblenden
-  mixin/MouseHandlerMixin.java           onScroll (Zoom statt Hotbar), turnPlayer (Empfindlichkeit)
+  mixin/MouseHandlerMixin.java           onScroll (Zoom statt Hotbar), turnPlayer (filmische Kamera, Empfindlichkeit)
 ```
 
 ### Rendering (RenderState-Pipeline von 26.1.2)
@@ -190,7 +193,7 @@ src/client/java/de/longeyes/client/ (nur Client)
 ./gradlew build
 ```
 
-Ergebnis: `build/libs/long-eyes-1.2.0.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
+Ergebnis: `build/libs/long-eyes-1.3.0.jar` (+ `-sources.jar`). Benötigt JDK 25 und Zugriff auf
 `maven.fabricmc.net`, `piston-meta.mojang.com`, `piston-data.mojang.com` und `libraries.minecraft.net`.
 
 Alternativ das Projekt in ein GitHub-Repository pushen: Der enthaltene Workflow

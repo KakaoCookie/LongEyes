@@ -3,6 +3,7 @@ package de.longeyes.client.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import org.joml.Vector2i;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -33,6 +34,15 @@ public abstract class MouseHandlerMixin {
 		}
 
 		ci.cancel();
+	}
+
+	/**
+	 * Cinematic camera while zooming: vanilla's "smooth camera" path is used for the duration of the
+	 * zoom only. The option itself ({@code Options.smoothCamera}) is never changed.
+	 */
+	@ModifyExpressionValue(method = "turnPlayer", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;smoothCamera:Z", opcode = Opcodes.GETFIELD))
+	private boolean longeyes$cinematicWhileZooming(boolean original) {
+		return original || (ZoomController.isActive() && EyesConfig.get().cinematicZoom);
 	}
 
 	/** Optional: scale mouse sensitivity so that aiming feels the same at every zoom level. */

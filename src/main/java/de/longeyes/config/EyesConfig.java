@@ -42,6 +42,8 @@ public final class EyesConfig {
 	public boolean smoothZoom = true;
 	/** Reduce mouse sensitivity proportional to the zoom factor. */
 	public boolean reduceSensitivity = true;
+	/** Cinematic (smooth, gliding) mouse movement while zooming, like OptiFine/Zoomify zoom. */
+	public boolean cinematicZoom = true;
 	/** Hide the first-person hand / held item while zooming. */
 	public boolean hideHandWhileZooming = true;
 

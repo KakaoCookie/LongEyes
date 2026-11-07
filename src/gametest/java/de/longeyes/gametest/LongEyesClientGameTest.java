@@ -146,6 +146,18 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 				ctx.waitTicks(5);
 				check(ctx.computeOnClient(client -> ZoomController.isActive()), "zoom resumes after closing the menu while C is still held");
 
+				// ---- 4b. Cinematic (smooth, gliding) mouse while zooming ----
+				float[] cinematic = measureGlide(ctx);
+				ctx.runOnClient(client -> EyesConfig.get().cinematicZoom = false);
+				float[] direct = measureGlide(ctx);
+				ctx.runOnClient(client -> EyesConfig.get().cinematicZoom = true);
+				log(String.format("   cinematic: total turn %.2f deg, still gliding after first tick %.2f deg", cinematic[0], cinematic[1]));
+				log(String.format("   direct:    total turn %.2f deg, still gliding after first tick %.2f deg", direct[0], direct[1]));
+				check(cinematic[0] > 0.5f && direct[0] > 0.5f, "mouse movement turns the camera while zooming");
+				check(cinematic[1] > direct[1] + 0.3f && cinematic[1] > 0.25f * cinematic[0], "camera glides smoothly after the mouse stops (cinematic zoom)");
+				check(direct[1] < 0.1f * Math.max(direct[0], 0.01f) + 0.05f, "with cinematicZoom off the camera follows directly");
+				check(!ctx.computeOnClient(client -> client.options.smoothCamera), "vanilla 'smooth camera' option itself is unchanged");
+
 				// ---- 5. Release ----
 				ctx.getInput().releaseKey(ZoomController.ZOOM_KEY);
 				ctx.waitTicks(20);
@@ -278,6 +290,18 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 		}
 
 		log("ALL " + passed + " CHECKS PASSED");
+	}
+
+	/** Moves the mouse once and returns {total yaw change, yaw change after the first tick}. */
+	private static float[] measureGlide(ClientGameTestContext ctx) {
+		ctx.waitTicks(30);
+		float start = ctx.computeOnClient(client -> client.player.getYRot());
+		ctx.getInput().moveCursor(300.0, 0.0);
+		ctx.waitTick();
+		float afterFirst = ctx.computeOnClient(client -> client.player.getYRot());
+		ctx.waitTicks(30);
+		float end = ctx.computeOnClient(client -> client.player.getYRot());
+		return new float[] {Math.abs(end - start), Math.abs(end - afterFirst)};
 	}
 
 	private static Entity findMannequin(Minecraft client) {

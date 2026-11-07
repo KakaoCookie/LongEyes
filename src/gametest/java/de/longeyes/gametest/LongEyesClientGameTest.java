@@ -307,6 +307,8 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 
 	/** Moves the mouse once and returns {total yaw change, yaw change after the first tick}. */
 	private static float[] measureGlide(ClientGameTestContext ctx) {
+		// Vanilla ignores the first mouse move after the cursor was (re)grabbed, e.g. after closing a menu.
+		ctx.getInput().moveCursor(1.0, 0.0);
 		ctx.waitTicks(30);
 		float start = ctx.computeOnClient(client -> client.player.getYRot());
 		ctx.getInput().moveCursor(300.0, 0.0);

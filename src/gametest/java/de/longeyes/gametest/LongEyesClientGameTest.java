@@ -151,11 +151,24 @@ public final class LongEyesClientGameTest implements FabricClientGameTest {
 				ctx.runOnClient(client -> EyesConfig.get().cinematicZoom = false);
 				float[] direct = measureGlide(ctx);
 				ctx.runOnClient(client -> EyesConfig.get().cinematicZoom = true);
-				log(String.format("   cinematic: total turn %.2f deg, still gliding after first tick %.2f deg", cinematic[0], cinematic[1]));
-				log(String.format("   direct:    total turn %.2f deg, still gliding after first tick %.2f deg", direct[0], direct[1]));
-				check(cinematic[0] > 0.5f && direct[0] > 0.5f, "mouse movement turns the camera while zooming");
-				check(cinematic[1] > direct[1] + 0.3f && cinematic[1] > 0.25f * cinematic[0], "camera glides smoothly after the mouse stops (cinematic zoom)");
-				check(direct[1] < 0.1f * Math.max(direct[0], 0.01f) + 0.05f, "with cinematicZoom off the camera follows directly");
+				// Reference: vanilla's own "smooth camera" option (F8) under identical conditions.
+				ctx.runOnClient(client -> {
+					EyesConfig.get().cinematicZoom = false;
+					client.options.smoothCamera = true;
+				});
+				float[] vanillaSmooth = measureGlide(ctx);
+				ctx.runOnClient(client -> {
+					client.options.smoothCamera = false;
+					EyesConfig.get().cinematicZoom = true;
+				});
+				log(String.format("   cinematic zoom:      total turn %.2f deg, gliding after first tick %.2f deg", cinematic[0], cinematic[1]));
+				log(String.format("   vanilla smooth cam:  total turn %.2f deg, gliding after first tick %.2f deg", vanillaSmooth[0], vanillaSmooth[1]));
+				log(String.format("   direct:              total turn %.2f deg, gliding after first tick %.2f deg", direct[0], direct[1]));
+				check(direct[0] > 0.5f, "mouse movement turns the camera while zooming");
+				check(direct[1] < 0.1f * direct[0] + 0.05f, "with cinematicZoom off the camera follows directly");
+				checkNear(cinematic[0], vanillaSmooth[0], 0.5, "cinematic zoom behaves like vanilla's smooth camera (total turn)");
+				checkNear(cinematic[1], vanillaSmooth[1], 0.5, "cinematic zoom behaves like vanilla's smooth camera (gliding)");
+				check(Math.abs(cinematic[0] - direct[0]) > 0.5f || Math.abs(cinematic[1] - direct[1]) > 0.3f, "cinematic zoom differs from direct mouse movement");
 				check(!ctx.computeOnClient(client -> client.options.smoothCamera), "vanilla 'smooth camera' option itself is unchanged");
 
 				// ---- 5. Release ----
